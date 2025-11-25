@@ -35,7 +35,7 @@ ki = 0.00003; % Integral gains
 kd = 0.0026; % Derivative gain
 
 tic
-while (toc < 15)  % Adjust me if you want to stop your line following 
+while (toc < 2)  % Adjust me if you want to stop your line following 
                  % earlier or let it run longer.
 
     % TIME STEP

@@ -13,6 +13,7 @@ minReflectance = [131.3, 101.5, 88.2, 83.6, 95.3, 94.1];
 maxReflectance = [1426.1, 987.7, 817.6, 757.7, 793.2, 581];
 % harissons reflectance max maxReflectance = [2082.7,1631.7,1374.8,1380.7,1598,1235.8]; 
 
+%%
 
 % 9 speed
 % kp = .00255;

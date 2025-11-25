@@ -6,8 +6,9 @@ clear all
 
 %global nb minReflectance maxReflectance whiteThresh targetDistance
 
-nb = nanobot('/dev/cu.usbmodem11101', 115200, 'serial');
+nb = nanobot('/dev/cu.usbmodem1101', 115200, 'serial');
 
+%%
 
 mOffScale = 1.112;
     
@@ -31,9 +32,7 @@ targetDistance = 200;
 
 function LineFollowBungus(nb)
 
-    motorBaseSpeed = 13;
     mOffScale = 1.112;
-    whiteThresh = 200; % Max value detected for all white
 
 
     minReflectance = [131.3, 101.5, 88.2, 83.6, 95.3, 94.1];
@@ -80,7 +79,9 @@ function LineFollowBungus(nb)
     nb.setMotor(2, m2Duty);
     pause(0.03);
     
-    while (~AllBlack(vals))  % Adjust me if you want to stop your line following 
+    while (AllBlack(vals) == 0)  % Adjust me if you want to stop your line following 
+
+
                      % earlier or let it run longer.
     
         % TIME STEP
@@ -153,16 +154,27 @@ function LineFollowBungus(nb)
         
         prevError = error;
     end
+    
     nb.setMotor(1, 0);
     nb.setMotor(2, 0);
         
+    
+    tic
+    while(toc<.3)
+        nb.setMotor(1, -9);
+        nb.setMotor(2, -9);
+    end
 
+   
+    nb.setMotor(1, 0);
+    nb.setMotor(2, 0);
+        
 
 end
 
 
 
-function GetToWallBungus(nb)
+function [frontDist] = GetToWallBungus(nb)
 
     motorBaseSpeed = 9;
     mOffScale = 1.112;
@@ -291,6 +303,9 @@ function GetToWallBungus(nb)
     end
     nb.setMotor(1, 0);
     nb.setMotor(2, 0);
+    
+    frontDist = nb.ultrasonicRead2;
+
         
     
 end
@@ -300,27 +315,39 @@ end
 
 function [successWallBungus] = WallBungus(nb, mOffScale)
     disp("inside wal bungus\n");
-    GetToWallBungus(nb);
+    distance = GetToWallBungus(nb);
     %distance = ApproachWallBungusBungus(nb, mOffScale);
     pause(0.5);
-    fprintf("outside get to wall\n");
+    disp("outside get to wall");
 
-    Right90(nb);
-    fprintf("after right turn, sleeping\n");
+    RightUltraSensor(nb, distance);
+    disp("after right turn, sleeping");
     pause(0.5);
+    disp("entering wall follow");
     WallBungusFollow(nb);
+    disp("exited wall follow ");
     pause(0.5);
     Right90(nb);
     LineFollowBungus(nb);
 
-
     return
+end
+
+function main(nb)
+    disp("starting main");
+    LineFollowBungus(nb);
+    disp("after line follow bungus");
+    WallBungus(nb);
+    LineFollowBungus(nb);
+    LineFollowBungus(nb);
+
+
 end
 
 
 function WallBungusFollow(nb)
     baseSpeed = 8;
-    fprintf("inside wall follow/n");
+    disp("inside wall follow/n");
 
     kp = 0.047; % Proportional gain
     ki = 0.00003; % Integral gains
@@ -340,7 +367,7 @@ function WallBungusFollow(nb)
         
         disp("Entered wallfolow loop")
           % take a reading                
-        vals = nb.reflectanceRead()
+        vals = nb.reflectanceRead();
     
         % change from a struct to a list for convenience
         vals = [vals.one, vals.two, vals.three, vals.four, vals.five, vals.six];
@@ -355,22 +382,26 @@ function WallBungusFollow(nb)
     
         % Calculate the three errors to be used in the PID control 
         
-        side = nb.ultrasonicRead1()
+        side = nb.ultrasonicRead1();
     
-        error = side - targetDistance
+        error = side - targetDistance;
     
     
-        integral = integral + prevError
+        integral = integral + prevError;
     
-        derivative = (error- prevError)/dt
+        derivative = (error- prevError)/dt;
     
         % Create your PID controller output here using the previously defined 
         % gain values and the three errors computed above. 
         control = kp*error + ki*integral + kd*derivative;
     
     
-        m1Speed = baseSpeed + control
-        m2Speed = baseSpeed * mOffScale
+        m1Speed = baseSpeed + control;
+        m2Speed = baseSpeed * mOffScale;
+
+        if(m1Speed > 200)
+            m1Speed = 200;
+        end
     
     
         nb.setMotor(1, m1Speed);
@@ -387,7 +418,7 @@ end
 
 % Returns true if vals array detects all black
 function [allBlack] = AllBlack(vals)
-    whiteThresh = 200;
+    whiteThresh = 500;
 
     if (vals(1) > whiteThresh && ...
                 vals(2) > whiteThresh && ...
@@ -396,6 +427,7 @@ function [allBlack] = AllBlack(vals)
                 vals(5) > whiteThresh && ...
                 vals(6) > whiteThresh)
         allBlack = 1;
+        disp("detected all black");
 
     else
         allBlack = 0;
@@ -412,10 +444,10 @@ function [anyBlack] = AnyBlack(vals)
                 vals(4) > whiteThresh || ...
                 vals(5) > whiteThresh || ...
                 vals(6) > whiteThresh)
-        anyBlack = 1
+        anyBlack = 1;
 
     else
-        anyBlack = 0
+        anyBlack = 0;
     end
 
 end
@@ -469,6 +501,39 @@ function Right45(nb)
        nb.setMotor(1, 0);
         nb.setMotor(2, 0);
 end
+
+
+function RightUltraSensor(nb, distance)
+   % Turn 90 deg right
+  
+    nb.setMotor(1, 10);
+    nb.setMotor(2, -10);
+    prev = 0;
+    current = nb.ultrasonicRead1;
+
+    while(nb.ultrasonicRead1() > distance)
+        nb.setMotor(1, -9);
+        nb.setMotor(2, 9);
+
+    end
+
+    disp("out of first while loop");
+
+   
+    while(nb.ultrasonicRead1 < distance + 100)
+        nb.setMotor(1, -9);
+        nb.setMotor(2, 9);
+
+    end
+    disp("out of second while loop");
+
+  
+    nb.setMotor(1, 0);
+    nb.setMotor(2, 0);
+
+end
+
+
 % Call functions
 
 % 1 is WallBungusfirst
@@ -494,8 +559,12 @@ end
 WallBungus(nb, mOffScale);
 
 %%
+main(nb);
+%%
 
 LineFollowBungus(nb)
+%%
+WallBungusFollow(nb);
 %%
 disp(nb.ultrasonicRead2());
 Right90(nb);
@@ -511,9 +580,16 @@ mOffScale = 1.112;
 
 nb.initUltrasonic2('D2', 'D3')
 
+%%
 while(1)
     nb.ultrasonicRead2()
 end
 % WallBungus(nb)
 % Right45(nb)
 % LineFollowBungus(nb)
+
+
+%%
+
+nb.setMotor(1, 0);
+nb.setMotor(2, 0);
