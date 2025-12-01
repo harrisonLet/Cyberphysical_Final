@@ -715,8 +715,8 @@ RightIterationCount(nb)
 RightUltraSensor(nb, 699);
 disp(nb.ultrasonicRead1())
 %%
-LineFollowBungus(nb, 13, 0);
-LineFollowBungus(nb, 13, 1);
+% LineFollowBungus(nb, 13, 0);
+% LineFollowBungus(nb, 13, 1);
 
 GetToWallBungus(nb);
 pause(1);
@@ -735,8 +735,8 @@ LineFollowBungus(nb, 9, 1);
 pause(1);
 
 CreepSearchLine(nb);
-LineFollowBungus(nb, 13, 0);
-LineFollowBungus(nb, 13, 1)
+% LineFollowBungus(nb, 13, 0);
+% LineFollowBungus(nb, 13, 1)
 
 %%
 GetToWallBungus(nb);
