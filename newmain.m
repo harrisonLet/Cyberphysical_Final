@@ -6,10 +6,18 @@ clear all
 
 %global nb minReflectance maxReflectance whiteThresh targetDistance
 
-nb = nanobot('/dev/cu.usbmodem1101', 115200, 'serial');
-nb2 = nanobot('/dev/cu.usbmodem4', 115200, 'serial');
+nb = nanobot('/dev/cu.usbmodem1301', 115200, 'serial');
+nb2 = nanobot('/dev/cu.usbmodem1201', 115200, 'serial');
 
 main(nb, nb2);
+
+%%
+WallFirst(nb)
+%%
+
+
+nb.setMotor(1, 0);
+nb.setMotor(2, 0);
 
 
 %%
@@ -374,6 +382,8 @@ function main(nb, nb2)
             DoColor(nb);
         otherwise
             WallFirst(nb);
+            pause(.5);
+
             DoColor(nb);
     end
 
@@ -397,6 +407,11 @@ function WallBungusFollow(nb, targDist)
     mOffScale = 1.112;
 
 
+    tic
+    while(toc<.2)
+        nb.setMotor(1, 10);
+        nb.setMotor(2, 10);
+    end
     while (~AnyBlack(vals))  % Adjust me if you want to stop your line following 
                      % earlier or let it run longer.
         
@@ -535,7 +550,21 @@ function Right45(nb)
        tic
        nb.setMotor(1, 10);
        nb.setMotor(2, -10);
-       while(toc < 0.6)
+       while(toc < 0.4)
+        nb.setMotor(1, -9);
+        nb.setMotor(2, 9);
+       end
+       nb.setMotor(1, 0);
+        nb.setMotor(2, 0);
+end
+
+
+function Right30(nb)
+    % Turn 90 deg right
+       tic
+       nb.setMotor(1, 10);
+       nb.setMotor(2, -10);
+       while(toc < 0.63)
         nb.setMotor(1, -9);
         nb.setMotor(2, 9);
        end
@@ -548,7 +577,7 @@ function Left45(nb)
        tic
        nb.setMotor(1, -10);
        nb.setMotor(2, 10);
-       while(toc < 0.6)
+       while(toc < 0.7)
         nb.setMotor(1, 9);
         nb.setMotor(2, -9);
        end
@@ -575,7 +604,7 @@ function [readDistance] = RightIterationCount(nb)
         end
     
 
-        if(countSinceLast > 18)
+        if(countSinceLast > 23)
            nb.setMotor(1, 0);
            nb.setMotor(2, 0);
            break;
@@ -766,8 +795,8 @@ function LineFirst (nb)
     LineFollowBungus(nb, 9, 1);
     
     Left45(nb);
-    LeftInfrared(nb);
-    % CreepSearchLine(nb);
+    %LeftInfrared(nb);
+    %CreepSearchLine(nb);
     LineFollowBungus(nb, 13, 1);
 
 
@@ -815,7 +844,7 @@ end
 
 
 function WallFirst (nb)
-    LineFollowBungus(nb, 9, 1);
+    LineFollowBungus(nb, 11, 0);
     
     Right45(nb);
     RightInfrared(nb);
@@ -1077,7 +1106,8 @@ WallBungusFollow(nb, dist);
 %%
 
 while(1)
-    nb.colorRead();
+    vals = nb.reflectanceRead();
+disp(vals);
 end
 %%
 LineFollowBungus(nb, 9, 1);
@@ -1099,11 +1129,17 @@ while(1)
     
 end
 
+%%
+WallFirst(nb);
 
+%%
+Right45(nb);
+RightInfrared(nb);
+LineFollowBungus(nb,10,1);
 %%
 clc
 clear all
-nb = nanobot('/dev/cu.usbmodem1101', 115200, 'serial');
+nb = nanobot('/dev/cu.usbmodem1301', 115200, 'serial');
 
 nb.setMotor(1, 0);
 nb.setMotor(2, 0);
@@ -1136,19 +1172,29 @@ nb.setMotor(2, 0);
 main();
 
 %%
+LineFirst(nb);
 
+%%
+LineFollowBungus(nb, 9, 1);
+pause(.5);
+DoColor(nb);
 
 %%
 
 function DoColor(nb)
-    isBlue = DetectColor(nb);
+    isBlue = 1;
         
-    mOffScale = 1.112;
+    mOffScale = 1.11;
     disp('somethign');
     
     if(isBlue)
         CreepForward(nb);
-        Right45(nb);
+        Right30(nb);
+        tic
+        while(toc < .1)
+            nb.setMotor(1,10);
+            nb.setMotor(2,10);
+        end
         while(~BlueDetected(nb))
             nb.setMotor(1, 9);
             nb.setMotor(2, 9*mOffScale)
@@ -1171,6 +1217,10 @@ function DoColor(nb)
 end
 
 %%
-
+LineFollowBungus(nb, 9, 0);
+    %CreepSearchLine(nb);
+    Right45(nb);
+    %RightInfrared(nb);
+    LineFollowBungus(nb, 13, 1);
 
 
